@@ -26,12 +26,14 @@ def create_app():
     
     return app, socketio, mqtt_client
 
-app, socketio, mqtt_client = create_app()
+def main():
+    app, socketio, mqtt_client = create_app()
+    # 先启动MQTT客户端
+    mqtt_client.start()
+    # 再启动Web服务器
+
+    socketio.run(app, debug=False, host='0.0.0.0', port=5000)
 
 if __name__ == '__main__':
-    mqtt_client.start()
-    # 在生产环境中使用
-    # socketio.run(app, debug=False, host='0.0.0.0', port=5000)
+    main()
     
-    # 在开发环境中使用
-    socketio.run(app, debug=False, host='0.0.0.0', port=5000, use_reloader=False) 

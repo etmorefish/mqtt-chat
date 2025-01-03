@@ -48,10 +48,12 @@
                            class="w-full rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
                            placeholder="请输入昵称">
                 </div>
-                <div class="flex gap-2 items-center">
-                    <input type="text" id="message" 
-                           class="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
-                           placeholder="发送消息">
+                <div class="flex gap-2 items-start">
+                    <textarea id="message" 
+                              class="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50 resize-none block w-full overflow-y-auto"
+                              style="min-height: 80px; max-height: 128px; height: 80px;"
+                              placeholder="发送消息&#10;Enter 发送&#10;Ctrl + Enter 换行"
+                              rows="1"></textarea>
                     <button onclick="sendMessage()" 
                             class="bg-wechat text-white px-6 py-2 rounded-full hover:bg-opacity-90 transition-colors text-sm">
                         发送

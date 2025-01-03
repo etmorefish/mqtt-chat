@@ -25,7 +25,8 @@ socket.on('error', (error) => {
 
 function sendMessage() {
     const username = document.getElementById('username').value;
-    const message = document.getElementById('message').value;
+    const messageInput = document.getElementById('message');
+    const message = messageInput.value.trim();
     
     if (username && message) {
         const now = new Date();
@@ -41,7 +42,8 @@ function sendMessage() {
             timestamp: timeString
         });
 
-        document.getElementById('message').value = '';
+        messageInput.value = '';
+        messageInput.style.height = '80px';  // 重置为初始高度
     } else {
         alert('请输入用户名和消息');
     }
@@ -82,8 +84,8 @@ function displayMessage(message) {
     // 创建消息气泡
     const bubble = document.createElement('div');
     bubble.className = isCurrentUser 
-        ? 'bg-wechat-light text-black p-3 rounded-2xl rounded-tr-sm break-words cursor-pointer hover:bg-opacity-90 transition-colors'
-        : 'bg-msg-bg text-black p-3 rounded-2xl rounded-tl-sm break-words shadow-sm cursor-pointer hover:bg-opacity-90 transition-colors';
+        ? 'bg-wechat-light text-black p-3 rounded-2xl rounded-tr-sm break-words whitespace-pre-wrap cursor-pointer hover:bg-opacity-90 transition-colors'
+        : 'bg-msg-bg text-black p-3 rounded-2xl rounded-tl-sm break-words whitespace-pre-wrap shadow-sm cursor-pointer hover:bg-opacity-90 transition-colors';
     bubble.textContent = message.message;
     
     // 添加点击复制功能
@@ -164,12 +166,43 @@ function displayMessage(message) {
     messageDiv.scrollTop = messageDiv.scrollHeight;
 }
 
+// 自动调整文本框高度
+function adjustTextareaHeight() {
+    const messageInput = document.getElementById('message');
+    messageInput.style.height = '80px';  // 设置为初始高度
+    const scrollHeight = messageInput.scrollHeight;
+    if (scrollHeight > 80) {  // 只有当内容超过初始高度时才调整
+        messageInput.style.height = Math.min(scrollHeight, 128) + 'px';
+    }
+}
+
 // 将事件监听器包装在 DOMContentLoaded 事件中
 document.addEventListener('DOMContentLoaded', function() {
-    // 添加回车发送功能
-    document.getElementById('message').addEventListener('keypress', function(e) {
+    const messageInput = document.getElementById('message');
+    
+    // 监听输入事件来调整高度
+    messageInput.addEventListener('input', adjustTextareaHeight);
+    
+    // 处理按键事件
+    messageInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
-            sendMessage();
+            if (e.ctrlKey) {
+                // Ctrl + Enter: 插入换行
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                const value = this.value;
+                this.value = value.substring(0, start) + '\n' + value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 1;
+                adjustTextareaHeight();
+                e.preventDefault();
+            } else if (!e.shiftKey) {
+                // 仅 Enter: 发送消息
+                e.preventDefault();
+                sendMessage();
+            }
         }
     });
+
+    // 初始化高度
+    messageInput.style.height = '80px';
 }); 
