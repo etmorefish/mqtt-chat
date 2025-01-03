@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MQTT 聊天室</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;,">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wechat': '#2BA245',
+                        'wechat-light': '#98E165',
+                        'wechat-bg': '#F5F5F5',
+                        'msg-bg': '#FFFFFF',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .opacity-0 {
+            opacity: 0;
+        }
+        .transition-opacity {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-wechat-bg h-screen">
+    <div class="container mx-auto max-w-2xl h-screen">
+        <div class="bg-wechat h-14 flex items-center justify-center px-4 shadow-md">
+            <h1 class="text-white text-lg font-medium">要多吃鱼聊天室</h1>
+        </div>
+        
+        <div class="h-[calc(100vh-3.5rem)] flex flex-col bg-wechat-bg">
+            <!-- 聊天消息区域 -->
+            <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- 消息将在这里动态添加 -->
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="bg-msg-bg p-3 space-y-2 shadow-lg">
+                <div class="flex gap-2">
+                    <input type="text" id="username" 
+                           class="w-full rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
+                           placeholder="请输入昵称">
+                </div>
+                <div class="flex gap-2 items-center">
+                    <input type="text" id="message" 
+                           class="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
+                           placeholder="发送消息">
+                    <button onclick="sendMessage()" 
+                            class="bg-wechat text-white px-6 py-2 rounded-full hover:bg-opacity-90 transition-colors text-sm">
+                        发送
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html> 

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MQTT 聊天室</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wechat': '#2BA245',
+                        'wechat-light': '#98E165',
+                        'wechat-bg': '#F5F5F5',
+                        'msg-bg': '#FFFFFF',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-wechat-bg h-screen">
+    <div class="container mx-auto max-w-2xl h-screen">
+        <div class="bg-wechat h-14 flex items-center px-4 shadow-md">
+            <h1 class="text-white text-lg font-medium">要多吃鱼聊天室</h1>
+        </div>
+        
+        <div class="h-[calc(100vh-3.5rem)] flex flex-col bg-wechat-bg">
+            <!-- 聊天消息区域 -->
+            <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- 消息将在这里动态添加 -->
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="bg-msg-bg p-3 space-y-2 shadow-lg">
+                <div class="flex gap-2">
+                    <input type="text" id="username" 
+                           class="w-full rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
+                           placeholder="请输入昵称">
+                </div>
+                <div class="flex gap-2 items-center">
+                    <input type="text" id="message" 
+                           class="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
+                           placeholder="发送消息">
+                    <button onclick="sendMessage()" 
+                            class="bg-wechat text-white px-6 py-2 rounded-full hover:bg-opacity-90 transition-colors text-sm">
+                        发送
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io('http://localhost:5000', {
+            transports: ['websocket'],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+
+        socket.on('chat_message', (data) => {
+            const message = JSON.parse(data.data);
+            displayMessage(message);
+        });
+
+        socket.on('error', (error) => {
+            console.error('Error:', error);
+            alert('发送消息失败：' + error.error);
+        });
+
+        function sendMessage() {
+            const username = document.getElementById('username').value;
+            const message = document.getElementById('message').value;
+            
+            if (username && message) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                socket.emit('chat_message', {
+                    username: username,
+                    message: message,
+                    timestamp: timeString
+                });
+
+                document.getElementById('message').value = '';
+            } else {
+                alert('请输入用户名和消息');
+            }
+        }
+
+        function displayMessage(message) {
+            const messageDiv = document.getElementById('messages');
+            const msgContainer = document.createElement('div');
+            msgContainer.className = 'mb-4';
+            
+            // 创建消息行
+            const messageRow = document.createElement('div');
+            messageRow.className = 'flex';
+            
+            const isCurrentUser = message.username === document.getElementById('username').value;
+            
+            // 创建头像
+            const avatar = document.createElement('div');
+            avatar.className = `w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-medium ${
+                isCurrentUser ? 'ml-2 bg-wechat' : 'mr-2 bg-blue-500'
+            }`;
+            avatar.textContent = message.username.charAt(0).toUpperCase();
+            
+            // 创建消息内容区域
+            const contentContainer = document.createElement('div');
+            contentContainer.className = 'flex flex-col max-w-[70%]';
+            if (isCurrentUser) {
+                contentContainer.className += ' items-end ml-auto';
+            }
+            
+            // 创建用户名和时间
+            const userInfo = document.createElement('div');
+            userInfo.className = 'text-xs text-gray-500 mb-1 px-1';
+            userInfo.textContent = isCurrentUser ? 
+                `${message.timestamp}` :
+                `${message.username}  ${message.timestamp}`;
+            
+            // 创建消息气泡
+            const bubble = document.createElement('div');
+            bubble.className = isCurrentUser 
+                ? 'bg-wechat-light text-black p-3 rounded-2xl rounded-tr-sm break-words'
+                : 'bg-msg-bg text-black p-3 rounded-2xl rounded-tl-sm break-words shadow-sm';
+            bubble.textContent = message.message;
+            
+            // 组装消息
+            contentContainer.appendChild(userInfo);
+            contentContainer.appendChild(bubble);
+            if (isCurrentUser) {
+                messageRow.appendChild(contentContainer);
+                messageRow.appendChild(avatar);
+            } else {
+                messageRow.appendChild(avatar);
+                messageRow.appendChild(contentContainer);
+            }
+            msgContainer.appendChild(messageRow);
+            messageDiv.appendChild(msgContainer);
+            
+            // 滚动到最新消息
+            messageDiv.scrollTop = messageDiv.scrollHeight;
+        }
+
+        // 添加回车发送功能
+        document.getElementById('message').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html> 
