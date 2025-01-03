@@ -30,4 +30,8 @@ app, socketio, mqtt_client = create_app()
 
 if __name__ == '__main__':
     mqtt_client.start()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000) 
+    # 在生产环境中使用
+    # socketio.run(app, debug=False, host='0.0.0.0', port=5000)
+    
+    # 在开发环境中使用
+    socketio.run(app, debug=False, host='0.0.0.0', port=5000, use_reloader=False) 
