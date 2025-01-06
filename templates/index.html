@@ -41,8 +41,12 @@
 </head>
 <body class="bg-wechat-bg h-screen">
     <div class="container mx-auto max-w-4xl h-screen">
-        <div class="bg-wechat h-14 flex items-center justify-center px-4 shadow-md">
+        <div class="bg-wechat h-14 flex items-center justify-between px-4 shadow-md">
             <h1 class="text-white text-lg font-medium">要多吃鱼聊天室</h1>
+            <button onclick="clearHistory()" 
+                    class="text-white text-sm hover:bg-white hover:bg-opacity-20 px-3 py-1 rounded transition-colors">
+                清除历史
+            </button>
         </div>
         
         <!-- 添加 flex 布局容器 -->
@@ -126,6 +130,7 @@
         </div>
     </div>
     
+    <script src="{{ url_for('static', filename='js/messageStore.js') }}"></script>
     <script src="{{ url_for('static', filename='js/userManager.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>

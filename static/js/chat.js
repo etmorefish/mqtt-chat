@@ -18,9 +18,16 @@ socket.on('disconnect', () => {
     console.log('Disconnected from server');
 });
 
-socket.on('chat_message', (data) => {
+socket.on('chat_message', async (data) => {
     const message = JSON.parse(data.data);
     displayMessage(message);
+    
+    try {
+        // 保存消息到本地存储
+        await messageStore.saveMessage(message);
+    } catch (error) {
+        console.error('保存消息失败:', error);
+    }
 });
 
 socket.on('error', (error) => {
@@ -220,49 +227,63 @@ function adjustTextareaHeight() {
 }
 
 // 将事件监听器包装在 DOMContentLoaded 事件中
-document.addEventListener('DOMContentLoaded', function() {
-    const messageInput = document.getElementById('message');
-    
-    // 监听输入事件来调整高度
-    messageInput.addEventListener('input', adjustTextareaHeight);
-    
-    // 处理按键事件
-    messageInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            if (e.ctrlKey) {
-                // Ctrl + Enter: 插入换行
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-                const value = this.value;
-                this.value = value.substring(0, start) + '\n' + value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 1;
-                adjustTextareaHeight();
-                e.preventDefault();
-            } else if (!e.shiftKey) {
-                // 仅 Enter: 发送消息
-                e.preventDefault();
-                sendMessage();
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // 初始化消息存储
+        await messageStore.init();
+        
+        // 加载历史消息
+        const messages = await messageStore.loadRecentMessages();
+        messages.forEach(message => {
+            displayMessage(message);
+        });
+        
+        const messageInput = document.getElementById('message');
+        
+        // 监听输入事件来调整高度
+        messageInput.addEventListener('input', adjustTextareaHeight);
+        
+        // 处理按键事件
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                if (e.ctrlKey) {
+                    // Ctrl + Enter: 插入换行
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    const value = this.value;
+                    this.value = value.substring(0, start) + '\n' + value.substring(end);
+                    this.selectionStart = this.selectionEnd = start + 1;
+                    adjustTextareaHeight();
+                    e.preventDefault();
+                } else if (!e.shiftKey) {
+                    // 仅 Enter: 发送消息
+                    e.preventDefault();
+                    sendMessage();
+                }
             }
-        }
-    });
+        });
 
-    // 初始化高度
-    messageInput.style.height = '80px';
+        // 初始化高度
+        messageInput.style.height = '80px';
 
-    // 初始化表情选择器
-    initEmojiPicker();
-    
-    // 点击其他地方时关闭表情选择器
-    document.addEventListener('click', function(e) {
-        const picker = document.getElementById('emojiPicker');
-        const emojiButton = e.target.closest('button[onclick="toggleEmojiPicker()"]');
-        if (!picker.contains(e.target) && !emojiButton) {
-            picker.classList.add('hidden');
-        }
-    });
+        // 初始化表情选择器
+        initEmojiPicker();
+        
+        // 点击其他地方时关闭表情选择器
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('emojiPicker');
+            const emojiButton = e.target.closest('button[onclick="toggleEmojiPicker()"]');
+            if (!picker.contains(e.target) && !emojiButton) {
+                picker.classList.add('hidden');
+            }
+        });
 
-    // 初始化用户信息
-    initUserInfo();
+        // 初始化用户信息
+        initUserInfo();
+    } catch (error) {
+        console.error('初始化失败:', error);
+        showToast('加载历史消息失败');
+    }
 });
 
 // 添加表情功能
@@ -357,9 +378,9 @@ function compressImage(file, callback) {
 }
 
 function sendImage(imageData) {
-    const username = document.getElementById('username').value;
-    if (!username) {
-        alert('请输入用户名');
+    const userInfo = userManager.getUserInfo();
+    if (!userInfo.displayName) {
+        alert('请先输入昵称');
         return;
     }
     
@@ -371,7 +392,8 @@ function sendImage(imageData) {
     });
     
     socket.emit('chat_message', {
-        username: username,
+        userId: userInfo.userId,
+        username: userInfo.displayName,
         message: `<img src="${imageData}" class="max-w-full rounded-lg cursor-pointer" alt="用户上传的图片" onclick="previewImage(this.src)">`,
         timestamp: timeString,
         type: 'image'
@@ -557,4 +579,14 @@ function updateUserList(users) {
     
     // 滚动到底部
     userList.scrollTop = userList.scrollHeight;
+}
+
+// 添加清除历史记录功能
+function clearHistory() {
+    if (confirm('确定要清除所有聊天记录吗？')) {
+        const request = indexedDB.deleteDatabase(messageStore.dbName);
+        request.onsuccess = () => {
+            location.reload(); // 刷新页面重新初始化
+        };
+    }
 } 
