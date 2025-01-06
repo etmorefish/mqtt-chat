@@ -23,6 +23,11 @@ class SocketEvents:
                 if not all(k in data for k in ['username', 'message']):
                     raise ValueError("Invalid message format")
 
+                # 处理图片消息
+                if data.get('type') == 'image':
+                    # 可以在这里添加图片验证、大小限制等
+                    pass
+                    
                 sanitized_message = sanitize_message(data)
                 logger.info(f"Sanitized message: {sanitized_message}")
                 
