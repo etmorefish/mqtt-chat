@@ -1,3 +1,4 @@
+from flask import request
 from flask_socketio import emit
 from .logger import logger
 from .utils import sanitize_message
@@ -6,6 +7,7 @@ import json
 class SocketEvents:
     def __init__(self, mqtt_client):
         self.mqtt_client = mqtt_client
+        self.online_users = {}  # {userId: user_info}
 
     def register_handlers(self, socketio):
         @socketio.on('connect')
@@ -14,25 +16,41 @@ class SocketEvents:
 
         @socketio.on('disconnect')
         def handle_disconnect():
+            if request.sid in self.online_users:
+                user_info = self.online_users[request.sid]
+                del self.online_users[request.sid]
+                emit('user_offline', user_info, broadcast=True)
             logger.info('Client disconnected')
+
+        @socketio.on('user_join')
+        def handle_join(user_info):
+            self.online_users[request.sid] = user_info
+            emit('user_online', user_info, broadcast=True)
+            # 发送当前在线用户列表给新用户
+            emit('online_users', list(self.online_users.values()))
+
+        @socketio.on('name_updated')
+        def handle_name_update(user_info):
+            if request.sid in self.online_users:
+                old_info = self.online_users[request.sid]
+                self.online_users[request.sid] = user_info
+                emit('user_updated', {
+                    'old': old_info,
+                    'new': user_info
+                }, broadcast=True)
 
         @socketio.on('chat_message')
         def handle_message(data):
             try:
                 logger.info(f"Received message: {data}")
-                if not all(k in data for k in ['username', 'message']):
+                if not all(k in data for k in ['userId', 'username', 'message']):
                     raise ValueError("Invalid message format")
 
-                # 处理图片消息
-                if data.get('type') == 'image':
-                    # 可以在这里添加图片验证、大小限制等
-                    pass
-                    
                 sanitized_message = sanitize_message(data)
                 logger.info(f"Sanitized message: {sanitized_message}")
                 
                 self.mqtt_client.publish(
-                    f"chat/room1/{sanitized_message['username']}", 
+                    f"chat/room1/{sanitized_message['userId']}", 
                     json.dumps(sanitized_message)
                 )
             except Exception as e:

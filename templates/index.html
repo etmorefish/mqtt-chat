@@ -66,10 +66,19 @@
             
             <!-- 输入区域 -->
             <div class="bg-msg-bg p-3 space-y-2 shadow-lg">
-                <div class="flex gap-2">
-                    <input type="text" id="username" 
-                           class="w-full rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
-                           placeholder="请输入昵称">
+                <div class="flex gap-2 items-center">
+                    <div id="userAvatar" 
+                         class="w-8 h-8 rounded-full bg-wechat text-white flex items-center justify-center text-sm font-medium">
+                        <!-- 头像首字母 -->
+                    </div>
+                    <input type="text" id="displayName" 
+                           class="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-wechat bg-gray-50" 
+                           placeholder="请输入昵称"
+                           value="">
+                    <button onclick="updateDisplayName()" 
+                            class="px-3 py-1 text-sm text-wechat hover:bg-wechat hover:text-white rounded-full border border-wechat transition-colors">
+                        修改昵称
+                    </button>
                 </div>
                 <!-- 添加功能按钮栏 -->
                 <div class="flex items-center gap-3 px-2">
@@ -104,6 +113,7 @@
         </div>
     </div>
     
+    <script src="{{ url_for('static', filename='js/userManager.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>
 </html> 

@@ -7,6 +7,11 @@ const socket = io(window.location.origin, {
 
 socket.on('connect', () => {
     console.log('Connected to server');
+    // 发送用户信息
+    const userInfo = userManager.getUserInfo();
+    if (userInfo.displayName) {
+        socket.emit('user_join', userInfo);
+    }
 });
 
 socket.on('disconnect', () => {
@@ -23,12 +28,38 @@ socket.on('error', (error) => {
     alert('发送消息失败：' + error.error);
 });
 
+// 添加用户相关事件处理
+socket.on('user_online', (user) => {
+    console.log('User online:', user);
+    showSystemMessage(`${user.displayName} 加入了聊天室`);
+});
+
+socket.on('user_offline', (user) => {
+    console.log('User offline:', user);
+    showSystemMessage(`${user.displayName} 离开了聊天室`);
+});
+
+socket.on('user_updated', (data) => {
+    console.log('User updated:', data);
+    showSystemMessage(`${data.old.displayName} 修改昵称为 ${data.new.displayName}`);
+});
+
+socket.on('online_users', (users) => {
+    console.log('Online users:', users);
+    // 这里可以更新在线用户列表UI
+});
+
 function sendMessage() {
-    const username = document.getElementById('username').value;
+    const userInfo = userManager.getUserInfo();
     const messageInput = document.getElementById('message');
     const message = messageInput.value.trim();
     
-    if (username && message) {
+    if (!userInfo.displayName) {
+        alert('请先输入昵称');
+        return;
+    }
+    
+    if (message) {
         const now = new Date();
         const timeString = now.toLocaleTimeString('zh-CN', {
             hour: '2-digit',
@@ -37,15 +68,14 @@ function sendMessage() {
         });
 
         socket.emit('chat_message', {
-            username: username,
+            userId: userInfo.userId,
+            username: userInfo.displayName,
             message: message,
             timestamp: timeString
         });
 
         messageInput.value = '';
-        messageInput.style.height = '80px';  // 重置为初始高度
-    } else {
-        alert('请输入用户名和消息');
+        messageInput.style.height = '80px';
     }
 }
 
@@ -58,7 +88,8 @@ function displayMessage(message) {
     const messageRow = document.createElement('div');
     messageRow.className = 'flex';
     
-    const isCurrentUser = message.username === document.getElementById('username').value;
+    // 使用 userManager 来判断是否是当前用户
+    const isCurrentUser = message.userId === userManager.getUserId();
     
     // 创建头像
     const avatar = document.createElement('div');
@@ -223,6 +254,9 @@ document.addEventListener('DOMContentLoaded', function() {
             picker.classList.add('hidden');
         }
     });
+
+    // 初始化用户信息
+    initUserInfo();
 });
 
 // 添加表情功能
@@ -397,4 +431,86 @@ function handleDrop(event) {
             alert('请拖拽图片文件');
         }
     }
+}
+
+// 初始化用户信息
+function initUserInfo() {
+    const userInfo = userManager.getUserInfo();
+    const displayNameInput = document.getElementById('displayName');
+    const userAvatar = document.getElementById('userAvatar');
+    
+    displayNameInput.value = userInfo.displayName;
+    userAvatar.textContent = userInfo.avatar;
+    
+    // 如果没有显示名称，要求用户输入
+    if (!userInfo.displayName) {
+        displayNameInput.focus();
+    }
+}
+
+// 更新显示名称
+function updateDisplayName() {
+    const displayNameInput = document.getElementById('displayName');
+    const newName = displayNameInput.value.trim();
+    
+    if (!newName) {
+        alert('请输入昵称');
+        return;
+    }
+    
+    const oldName = userManager.getDisplayName();
+    userManager.setDisplayName(newName);
+    
+    // 更新头像
+    const userAvatar = document.getElementById('userAvatar');
+    userAvatar.textContent = newName.charAt(0).toUpperCase();
+    
+    // 检查连接状态并发送更新
+    if (socket.connected) {
+        const userInfo = userManager.getUserInfo();
+        
+        if (!oldName) {
+            // 首次设置昵称
+            socket.emit('user_join', userInfo);
+        } else {
+            // 更新昵称
+            socket.emit('name_updated', userInfo);
+        }
+        
+        // 添加反馈提示
+        showToast('昵称已更新');
+    } else {
+        showToast('连接已断开，请刷新页面');
+    }
+}
+
+// 添加一个通用的提示函数
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white px-4 py-2 rounded-full text-sm';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // 1.5秒后移除提示
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'transition-opacity');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 1500);
+}
+
+// 显示系统消息
+function showSystemMessage(text) {
+    const messageDiv = document.getElementById('messages');
+    const msgContainer = document.createElement('div');
+    msgContainer.className = 'flex justify-center my-2';
+    
+    const systemMsg = document.createElement('div');
+    systemMsg.className = 'text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full';
+    systemMsg.textContent = text;
+    
+    msgContainer.appendChild(systemMsg);
+    messageDiv.appendChild(msgContainer);
+    messageDiv.scrollTop = messageDiv.scrollHeight;
 } 
