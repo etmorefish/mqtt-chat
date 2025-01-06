@@ -32,21 +32,27 @@ socket.on('error', (error) => {
 socket.on('user_online', (user) => {
     console.log('User online:', user);
     showSystemMessage(`${user.displayName} 加入了聊天室`);
+    // 请求最新的用户列表
+    socket.emit('request_users');
 });
 
 socket.on('user_offline', (user) => {
     console.log('User offline:', user);
     showSystemMessage(`${user.displayName} 离开了聊天室`);
+    // 请求最新的用户列表
+    socket.emit('request_users');
 });
 
 socket.on('user_updated', (data) => {
     console.log('User updated:', data);
     showSystemMessage(`${data.old.displayName} 修改昵称为 ${data.new.displayName}`);
+    // 请求最新的用户列表
+    socket.emit('request_users');
 });
 
 socket.on('online_users', (users) => {
     console.log('Online users:', users);
-    // 这里可以更新在线用户列表UI
+    updateUserList(users);  // 添加这行来更新用户列表
 });
 
 function sendMessage() {
@@ -513,4 +519,42 @@ function showSystemMessage(text) {
     msgContainer.appendChild(systemMsg);
     messageDiv.appendChild(msgContainer);
     messageDiv.scrollTop = messageDiv.scrollHeight;
+}
+
+function createUserElement(user) {
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors';
+    
+    // 创建头像
+    const avatar = document.createElement('div');
+    avatar.className = 'w-8 h-8 rounded-full bg-wechat text-white flex items-center justify-center text-sm font-medium';
+    avatar.textContent = user.displayName.charAt(0).toUpperCase();
+    
+    // 创建用户名
+    const name = document.createElement('div');
+    name.className = 'text-sm text-gray-700';
+    name.textContent = user.displayName;
+    
+    // 如果是当前用户，添加标记
+    if (user.userId === userManager.getUserId()) {
+        name.textContent += ' (我)';
+    }
+    
+    div.appendChild(avatar);
+    div.appendChild(name);
+    return div;
+}
+
+// 更新用户列表时滚动到底部
+function updateUserList(users) {
+    const userList = document.getElementById('userList');
+    userList.innerHTML = '';
+    
+    users.forEach(user => {
+        const userElement = createUserElement(user);
+        userList.appendChild(userElement);
+    });
+    
+    // 滚动到底部
+    userList.scrollTop = userList.scrollHeight;
 } 

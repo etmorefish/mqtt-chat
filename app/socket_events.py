@@ -27,7 +27,7 @@ class SocketEvents:
             self.online_users[request.sid] = user_info
             emit('user_online', user_info, broadcast=True)
             # 发送当前在线用户列表给新用户
-            emit('online_users', list(self.online_users.values()))
+            emit('online_users', list(self.online_users.values()), to=request.sid)
 
         @socketio.on('name_updated')
         def handle_name_update(user_info):
@@ -56,3 +56,7 @@ class SocketEvents:
             except Exception as e:
                 logger.error(f"Error handling message: {e}", exc_info=True)
                 emit('error', {'error': str(e)}) 
+
+        @socketio.on('request_users')
+        def handle_request_users():
+            emit('online_users', list(self.online_users.values())) 
